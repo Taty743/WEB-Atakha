@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAS — Átakha</title>
+<style>
+/* ══════════════════════════════════════════════
+   RESET & ROOT
+══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --orange:  #ff9600;
+  --purple:  #7824c4;
+  --teal:    #299da7;
+  --navy:    #115774;
+  --red:     #d73704;
+  --crimson: #f8353d;
+  --magenta: #ca34d1;
+  --bg:      #0a0a0d;
+  --bg2:     #0f0f13;
+  --text:    #e8edf2;
+  --font:    'Trebuchet MS', 'Lucida Grande', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* scanlines */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ══════════════════════════════════════════════
+   SIDE MENU
+══════════════════════════════════════════════ */
+/* overlay just closes the menu on outside click */
+#menu-overlay {
+  position: fixed; inset: 0;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+#menu-overlay.open { opacity: 1; pointer-events: all; }
+
+/* dropdown panel */
+#side-menu {
+  position: fixed;
+  top: 70px; left: 0; right: 0;
+  width: 100%;
+  background: linear-gradient(180deg, #0f0f16 0%, #13101e 100%);
+  border-bottom: 1px solid rgba(255,150,0,.2);
+  z-index: 400;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity .25s ease, transform .25s ease;
+  box-shadow: none;
+}
+#side-menu.open {
+  pointer-events: all;
+  opacity: 1;
+  transform: translateY(0);
+  box-shadow: 0 16px 48px rgba(0,0,0,.7);
+}
+
+.menu-header { display: none; }
+
+.menu-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  padding: 24px 40px;
+  gap: 0;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.menu-section-label {
+  font-size: .62rem;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: rgba(232,237,242,.25);
+  padding: 12px 16px 4px;
+  grid-column: 1 / -1;
+}
+.menu-section-label:first-child { padding-top: 0; }
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  text-decoration: none;
+  color: rgba(232,237,242,.75);
+  font-family: var(--font);
+  font-size: .95rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  border-left: 3px solid transparent;
+  border-top: none; border-right: none; border-bottom: none;
+  transition: all .18s;
+  cursor: pointer;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.menu-item:hover {
+  color: var(--orange);
+  border-left-color: var(--orange);
+  background: rgba(255,150,0,.06);
+}
+.menu-item.active {
+  color: var(--orange);
+  border-left-color: var(--orange);
+  background: rgba(255,150,0,.08);
+}
+.menu-item.active.purple { color: var(--purple); border-left-color: var(--purple); background: rgba(120,36,196,.08); }
+.menu-item.active.teal   { color: var(--teal);   border-left-color: var(--teal);   background: rgba(41,157,167,.08); }
+.menu-item.active.magenta{ color: var(--magenta);border-left-color: var(--magenta);background: rgba(202,52,209,.08); }
+.menu-item:hover.purple  { color: var(--purple); border-left-color: var(--purple); background: rgba(120,36,196,.06); }
+.menu-item:hover.teal    { color: var(--teal);   border-left-color: var(--teal);   background: rgba(41,157,167,.06); }
+.menu-item:hover.magenta { color: var(--magenta);border-left-color: var(--magenta);background: rgba(202,52,209,.06); }
+
+.menu-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+
+.menu-divider {
+  height: 1px;
+  background: rgba(255,255,255,.06);
+  margin: 8px 16px;
+  grid-column: 1 / -1;
+}
+
+.menu-footer {
+  padding: 14px 40px 18px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: .68rem;
+  color: rgba(232,237,242,.2);
+  letter-spacing: .1em;
+  text-align: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════════════
+   NAV BAR
+══════════════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 40px;
+  background: linear-gradient(180deg, rgba(10,10,13,.96) 0%, transparent 100%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255,150,0,.1);
+}
+
+.nav-left { display: flex; align-items: center; gap: 18px; }
+
+.hamburger {
+  background: none;
+  border: 1px solid rgba(255,150,0,.3);
+  color: var(--orange);
+  width: 40px; height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  padding: 0;
+}
+.hamburger:hover { background: rgba(255,150,0,.1); border-color: var(--orange); }
+.hamburger span {
+  display: block;
+  width: 18px; height: 2px;
+  background: var(--orange);
+  transition: all .3s;
+}
+.hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.nav-logo .brand-img {
+  height: clamp(30px, 4.5vw, 46px);
+  width: auto;
+  max-width: min(200px, 46vw);
+  cursor: pointer;
+  filter: drop-shadow(0 0 10px rgba(255,150,0,.35));
+}
+.menu-logo .brand-img {
+  height: clamp(36px, 5vw, 52px);
+  width: auto;
+  max-width: 100%;
+}
+
+.nav-breadcrumb {
+  font-size: .78rem;
+  letter-spacing: .15em;
+  color: rgba(232,237,242,.35);
+  text-transform: uppercase;
+}
+.nav-breadcrumb span { color: var(--orange); }
+
+.nav-right {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-btn {
+  font-family: var(--font);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  border: none;
+  cursor: pointer;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  transition: filter .2s, transform .15s;
+}
+.nav-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+.nav-btn.buy { background: linear-gradient(135deg, var(--orange), var(--red)); color: #fff; }
+.nav-btn.about { background: rgba(255,255,255,.07); color: rgba(232,237,242,.7); border: 1px solid rgba(255,255,255,.1); }
+
+/* ══════════════════════════════════════════════
+   PAGES (show/hide)
+══════════════════════════════════════════════ */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ══════════════════════════════════════════════
+   SHARED UTILITIES
+══════════════════════════════════════════════ */
+.sep {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--orange), var(--purple), var(--teal), transparent);
+  opacity: .3;
+}
+
+/* Logotipos: sin caja fija; multiply integra fondos claros del JPG en el fondo oscuro (PNG transparente sigue viéndose bien) */
+.brand-img {
+  display: block;
+  object-fit: contain;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  mix-blend-mode: multiply;
+}
+
+section { padding: 100px 48px; }
+
+.section-label {
+  font-size: .7rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 28px; height: 2px;
+  background: var(--teal);
+}
+
+.section-title {
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 1;
+  letter-spacing: .04em;
+  margin-bottom: 24px;
+  font-weight: 700;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .65s ease, transform .65s ease;
+}
+.reveal.visible { opacity: 1; transform: none; }
+
+/* ══════════════════════════════════════════════
+   HOME — HERO
+══════════════════════════════════════════════ */
+#hero {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  padding: 120px 48px 80px;
+}
+
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(120,36,196,.22) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 80% at 80% 60%, rgba(255,150,0,.16) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 90%, rgba(202,52,209,.12) 0%, transparent 60%);
+}
+
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(41,157,167,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(41,157,167,.07) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: rotateX(15deg) scale(1.2);
+  transform-origin: center bottom;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.hero-tag {
+  display: inline-block;
+  font-size: .72rem;
+  letter-spacing: .25em;
+  color: var(--teal);
+  text-transform: uppercase;
+  border: 1px solid rgba(41,157,167,.4);
+  padding: 6px 18px;
+  margin-bottom: 24px;
+  animation: fadeUp .6s ease both;
+}
+
+.hero-logo-img {
+  width: min(760px, 94vw);
+  max-height: min(52vh, 420px);
+  height: auto;
+  filter: drop-shadow(0 0 50px rgba(255,150,0,.3)) drop-shadow(0 0 20px rgba(202,52,209,.2));
+  animation: fadeUp .8s ease both;
+  margin-bottom: 8px;
+}
+
+.hero-sub {
+  font-size: 1.15rem;
+  color: rgba(232,237,242,.58);
+  max-width: 500px;
+  margin: 16px auto 40px;
+  line-height: 1.75;
+  animation: fadeUp .9s ease both;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--orange), var(--red));
+  color: #fff;
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 15px 42px;
+  border: none;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  transition: transform .15s, filter .15s;
+  animation: fadeUp 1s ease both;
+  cursor: pointer;
+}
+.hero-cta:hover {
+  transform: translateY(-3px) scale(1.02);
+  filter: brightness(1.15) drop-shadow(0 8px 24px rgba(255,150,0,.45));
+}
+
+/* ══════════════════════════════════════════════
+   HOME — PROBLEM
+══════════════════════════════════════════════ */
+#problem {
+  background: var(--bg2);
+  position: relative;
+  overflow: hidden;
+}
+#problem::before {
+  content: '!';
+  position: absolute; right: -20px; top: -40px;
+  font-size: 380px; font-weight: 900;
+  color: rgba(247,53,61,.04);
+  pointer-events: none; line-height: 1;
+}
+
+.problem-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+.problem-text .section-title {
+  background: linear-gradient(90deg, var(--crimson), var(--orange));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.problem-text p { font-size: 1.08rem; line-height: 1.8; color: rgba(232,237,242,.68); }
+.problem-text strong { color: var(--orange); -webkit-text-fill-color: var(--orange); }
+
+.stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.stat-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  padding: 26px 22px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, border-color .2s;
+}
+.stat-card:hover { transform: translateY(-4px); border-color: rgba(255,150,0,.3); }
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%;
+}
+.stat-card:nth-child(1)::before { background: var(--orange); }
+.stat-card:nth-child(2)::before { background: var(--purple); }
+.stat-card:nth-child(3)::before { background: var(--teal); }
+.stat-card:nth-child(4)::before { background: var(--magenta); }
+
+.stat-num {
+  font-size: 2.8rem; font-weight: 900; line-height: 1;
+  color: var(--orange);
+}
+.stat-card:nth-child(2) .stat-num { color: var(--purple); }
+.stat-card:nth-child(3) .stat-num { color: var(--teal); }
+.stat-card:nth-child(4) .stat-num { color: var(--magenta); }
+.stat-desc { font-size: .88rem; color: rgba(232,237,242,.5); margin-top: 6px; line-height: 1.5; }
+
+/* ══════════════════════════════════════════════
+   HOME — MVV
+══════════════════════════════════════════════ */
+#mvv { background: var(--bg); }
+.mvv-inner { max-width: 1100px; margin: 0 auto; }
+.mvv-inner .section-title {
+  background: linear-gradient(90deg, var(--purple), var(--magenta));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.mvv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 44px;
+}
+.mvv-card {
+  padding: 36px 32px;
+  border: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  transition: transform .2s;
+}
+.mvv-card:hover { transform: translateY(-4px); }
+.mvv-card.mision { background: linear-gradient(135deg,rgba(120,36,196,.1),rgba(202,52,209,.05)); border-color: rgba(120,36,196,.28); }
+.mvv-card.vision { background: linear-gradient(135deg,rgba(17,87,116,.1),rgba(41,157,167,.05)); border-color: rgba(41,157,167,.28); }
+.mvv-card.valores { grid-column: 1/-1; background: linear-gradient(135deg,rgba(255,150,0,.07),rgba(215,55,4,.04)); border-color: rgba(255,150,0,.22); }
+.mvv-icon { font-size: 2.2rem; margin-bottom: 14px; display: block; }
+.mvv-card h3 { font-size: 1.6rem; font-weight: 700; letter-spacing: .06em; margin-bottom: 12px; }
+.mvv-card.mision h3 { color: var(--purple); }
+.mvv-card.vision h3  { color: var(--teal); }
+.mvv-card.valores h3 { color: var(--orange); }
+.mvv-quote {
+  font-size: 1.05rem; font-style: italic;
+  color: rgba(232,237,242,.82);
+  line-height: 1.7;
+  border-left: 3px solid var(--purple);
+  padding-left: 18px;
+  margin-bottom: 14px;
+}
+.mvv-card.vision .mvv-quote  { border-left-color: var(--teal); }
+.mvv-card.valores .mvv-quote { border-left-color: var(--orange); }
+.mvv-explain { font-size: .92rem; color: rgba(232,237,242,.48); line-height: 1.7; }
+.valores-pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.pill {
+  font-size: .82rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  padding: 7px 20px;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  transition: filter .2s, transform .2s;
+}
+.pill:hover { filter: brightness(1.2); transform: scale(1.05); }
+.pill:nth-child(1) { background: var(--orange); color: #000; }
+.pill:nth-child(2) { background: var(--purple); color: #fff; }
+.pill:nth-child(3) { background: var(--teal); color: #000; }
+.pill:nth-child(4) { background: var(--crimson); color: #fff; }
+.pill:nth-child(5) { background: var(--magenta); color: #fff; }
+.pill:nth-child(6) { background: var(--navy); color: #fff; }
+
+/* ══════════════════════════════════════════════
+   HOME — NOMBRE
+══════════════════════════════════════════════ */
+#nombre { background: var(--bg2); overflow: hidden; position: relative; }
+#nombre::after {
+  content: 'FAS';
+  position: absolute; right: -60px; top: 50%; transform: translateY(-50%);
+  font-size: 360px; font-weight: 900; color: rgba(255,150,0,.03);
+  pointer-events: none; white-space: nowrap; line-height: 1;
+}
+.nombre-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 60px; align-items: center;
+}
+.nombre-text .section-title {
+  background: linear-gradient(90deg, var(--orange), var(--teal));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.nombre-text p { font-size: 1.05rem; line-height: 1.8; color: rgba(232,237,242,.62); margin-bottom: 18px; }
+.nombre-text strong { color: var(--orange); -webkit-text-fill-color: var(--orange); }
+.logo-showcase {
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  position: relative; z-index: 1;
+}
+.logo-showcase .brand-img {
+  width: auto;
+  max-width: min(640px, 96vw);
+  max-height: min(52vh, 440px);
+  height: auto;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 6px 32px rgba(255,150,0,.28)) drop-shadow(0 2px 16px rgba(120,36,196,.2));
+}
+.logo-tagline {
+  font-size: .72rem; letter-spacing: .22em; color: rgba(232,237,242,.35); text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════════
+   HOME — COLORES
+══════════════════════════════════════════════ */
+#colores { background: var(--bg); }
+.colores-inner { max-width: 1100px; margin: 0 auto; }
+.colores-inner .section-title {
+  background: linear-gradient(90deg, var(--magenta), var(--teal));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.palette-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 12px; margin-top: 44px; }
+.swatch { overflow: hidden; transition: transform .2s; }
+.swatch:hover { transform: translateY(-8px) scale(1.02); }
+.swatch-block { height: 110px; position: relative; }
+.swatch-info {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-top: none;
+  padding: 12px 10px;
+}
+.swatch-hex { font-size: .68rem; letter-spacing: .08em; color: rgba(232,237,242,.5); display: block; margin-bottom: 3px; }
+.swatch-name { font-size: .78rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+.color-desc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 44px; }
+.color-desc { padding: 22px; border-radius: 2px; }
+.color-desc h4 { font-size: .92rem; font-weight: 700; letter-spacing: .1em; margin-bottom: 8px; }
+.color-desc p  { font-size: .85rem; color: rgba(232,237,242,.5); line-height: 1.6; }
+
+/* ══════════════════════════════════════════════
+   PAGE: COMPRAR
+══════════════════════════════════════════════ */
+.page-hero {
+  min-height: 45vh;
+  display: flex;
+  align-items: flex-end;
+  padding: 140px 48px 60px;
+  position: relative;
+  overflow: hidden;
+}
+.page-hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 80% at 70% 40%, rgba(255,150,0,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 20% 70%, rgba(120,36,196,.15) 0%, transparent 60%);
+}
+.page-hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,150,0,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,150,0,.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+.page-hero-content { position: relative; z-index: 2; max-width: 1100px; margin: 0 auto; width: 100%; }
+.page-hero-eyebrow {
+  font-size: .72rem; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--orange); margin-bottom: 12px;
+}
+.page-hero-title {
+  font-size: clamp(3rem, 8vw, 6.5rem);
+  font-weight: 900;
+  line-height: .95;
+  letter-spacing: .02em;
+  background: linear-gradient(90deg, #fff 0%, rgba(232,237,242,.6) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* Producto card */
+.buy-section { max-width: 1100px; margin: 0 auto; padding: 80px 48px; }
+.buy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+.buy-product-visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  isolation: isolate;
+}
+.buy-glow-ring {
+  position: absolute;
+  width: 380px; height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,150,0,.12) 0%, rgba(120,36,196,.08) 50%, transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(1.08);opacity:1} }
+
+.buy-product-visual .brand-img {
+  position: relative; z-index: 1;
+  width: auto;
+  max-width: min(400px, 92vw);
+  max-height: min(48vh, 420px);
+  height: auto;
+  mix-blend-mode: normal;
+  filter: brightness(1.08) contrast(1.02) drop-shadow(0 8px 36px rgba(255,150,0,.35)) drop-shadow(0 2px 14px rgba(255,255,255,.08));
+}
+
+.buy-info { display: flex; flex-direction: column; gap: 24px; }
+.buy-tag {
+  display: inline-block;
+  background: rgba(255,150,0,.12);
+  border: 1px solid rgba(255,150,0,.3);
+  color: var(--orange);
+  font-size: .72rem; font-weight: 700;
+  letter-spacing: .2em; text-transform: uppercase;
+  padding: 5px 16px;
+  width: fit-content;
+}
+.buy-product-name {
+  font-size: clamp(2.8rem, 5vw, 4rem);
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--orange), var(--magenta));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.buy-desc {
+  font-size: 1.05rem;
+  color: rgba(232,237,242,.65);
+  line-height: 1.8;
+}
+.buy-features {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.buy-feature {
+  display: flex; align-items: center; gap: 12px;
+  font-size: .95rem; color: rgba(232,237,242,.72);
+}
+.buy-feature::before {
+  content: '▸';
+  color: var(--orange);
+  flex-shrink: 0;
+}
+.buy-price-box {
+  background: rgba(255,150,0,.06);
+  border: 1px solid rgba(255,150,0,.2);
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.buy-price { font-size: 3rem; font-weight: 900; color: var(--orange); line-height: 1; }
+.buy-price span { font-size: 1.2rem; color: rgba(232,237,242,.4); margin-left: 6px; }
+.buy-btn {
+  font-family: var(--font);
+  font-size: 1rem; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  background: linear-gradient(135deg, var(--orange), var(--red));
+  color: #fff;
+  border: none;
+  padding: 16px 36px;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  cursor: pointer;
+  transition: filter .2s, transform .15s;
+}
+.buy-btn:hover { filter: brightness(1.15); transform: translateY(-2px); }
+
+/* plataformas */
+.platforms-section {
+  background: var(--bg2);
+  padding: 70px 48px;
+}
+.platforms-inner { max-width: 1100px; margin: 0 auto; }
+.platforms-inner h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: .06em; color: rgba(232,237,242,.6); margin-bottom: 32px; text-transform: uppercase; }
+.platform-cards { display: flex; flex-wrap: wrap; gap: 16px; }
+.platform-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  padding: 22px 32px;
+  display: flex; align-items: center; gap: 14px;
+  transition: border-color .2s, transform .2s;
+  cursor: pointer;
+  min-width: 180px;
+}
+.platform-card:hover { border-color: rgba(255,150,0,.3); transform: translateY(-3px); }
+.platform-icon { font-size: 1.8rem; }
+.platform-name { font-size: 1rem; font-weight: 700; color: var(--text); }
+.platform-status { font-size: .72rem; color: rgba(232,237,242,.38); text-transform: uppercase; letter-spacing: .1em; }
+
+/* ══════════════════════════════════════════════
+   PAGE: NOSOTROS
+══════════════════════════════════════════════ */
+.about-section { max-width: 1100px; margin: 0 auto; padding: 80px 48px; }
+.founders-intro {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 60px;
+  align-items: center;
+  margin-bottom: 80px;
+}
+.founders-intro-text h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  background: linear-gradient(90deg, var(--teal), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.founders-intro-text p { font-size: 1.05rem; color: rgba(232,237,242,.62); line-height: 1.8; margin-bottom: 16px; }
+.about-logo {
+  isolation: isolate;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.about-logo .brand-img {
+  width: auto;
+  max-width: min(380px, 90vw);
+  max-height: min(38vh, 280px);
+  height: auto;
+  mix-blend-mode: normal;
+  filter: brightness(1.1) contrast(1.03) drop-shadow(0 8px 28px rgba(41,157,167,.35)) drop-shadow(0 2px 12px rgba(120,36,196,.22));
+}
+
+.founders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin-bottom: 80px;
+}
+.founder-card {
+  padding: 36px 28px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.02);
+  position: relative;
+  overflow: hidden;
+  transition: transform .25s, border-color .25s;
+}
+.founder-card:hover { transform: translateY(-6px); }
+.founder-card:nth-child(1) { border-top: 3px solid var(--orange); }
+.founder-card:nth-child(2) { border-top: 3px solid var(--purple); }
+.founder-card:nth-child(3) { border-top: 3px solid var(--teal); }
+.founder-card:nth-child(1):hover { border-color: var(--orange); }
+.founder-card:nth-child(2):hover { border-color: var(--purple); }
+.founder-card:nth-child(3):hover { border-color: var(--teal); }
+
+.founder-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 18px;
+}
+.founder-card:nth-child(1) .founder-avatar { background: rgba(255,150,0,.12); border: 2px solid rgba(255,150,0,.3); }
+.founder-card:nth-child(2) .founder-avatar { background: rgba(120,36,196,.12); border: 2px solid rgba(120,36,196,.3); }
+.founder-card:nth-child(3) .founder-avatar { background: rgba(41,157,167,.12); border: 2px solid rgba(41,157,167,.3); }
+
+.founder-initial {
+  font-size: 2rem; font-weight: 900;
+}
+.founder-card:nth-child(1) .founder-initial { color: var(--orange); }
+.founder-card:nth-child(2) .founder-initial { color: var(--purple); }
+.founder-card:nth-child(3) .founder-initial { color: var(--teal); }
+
+.founder-name { font-size: 1.5rem; font-weight: 900; color: #fff; margin-bottom: 4px; }
+.founder-role {
+  font-size: .75rem; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.founder-card:nth-child(1) .founder-role { color: var(--orange); }
+.founder-card:nth-child(2) .founder-role { color: var(--purple); }
+.founder-card:nth-child(3) .founder-role { color: var(--teal); }
+
+.founder-bio { font-size: .95rem; color: rgba(232,237,242,.58); line-height: 1.75; }
+
+.about-values-section {
+  background: var(--bg2);
+  padding: 70px 48px;
+}
+.about-values-inner { max-width: 1100px; margin: 0 auto; }
+.about-values-inner h2 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 900;
+  margin-bottom: 36px;
+  background: linear-gradient(90deg, var(--magenta), var(--orange));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.values-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+.value-item {
+  padding: 28px 24px;
+  border: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  transition: transform .2s;
+}
+.value-item:hover { transform: translateY(-4px); }
+.value-icon { font-size: 1.8rem; margin-bottom: 12px; }
+.value-name { font-size: 1.1rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+.value-text { font-size: .88rem; color: rgba(232,237,242,.5); line-height: 1.65; }
+
+/* ══════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════ */
+footer {
+  background: var(--bg2);
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding: 44px 48px;
+  text-align: center;
+}
+.footer-logo {
+  display: flex;
+  justify-content: center;
+}
+.footer-logo .brand-img {
+  height: clamp(40px, 6vw, 58px);
+  width: auto;
+  max-width: min(260px, 85vw);
+  margin: 0 auto 10px;
+  filter: drop-shadow(0 0 10px rgba(255,150,0,.35));
+}
+.footer-text {
+  font-size: .7rem;
+  letter-spacing: .15em;
+  color: rgba(232,237,242,.22);
+  text-transform: uppercase;
+}
+
+/* ══════════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(22px); }
+  to   { opacity:1; transform:none; }
+}
+
+/* spark on click */
+.spark {
+  position: fixed;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sparkAnim .55s ease forwards;
+  z-index: 5000;
+}
+@keyframes sparkAnim {
+  0%   { transform:translate(0,0) scale(1); opacity:1; }
+  100% { transform:translate(var(--dx),var(--dy)) scale(0); opacity:0; }
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════ */
+@media(max-width:768px){
+  nav { padding: 12px 20px; }
+  section, .buy-section, .about-section { padding: 60px 20px; }
+  .page-hero { padding: 120px 20px 50px; }
+  .problem-inner, .nombre-inner, .buy-grid, .founders-intro { grid-template-columns:1fr; gap:36px; }
+  .mvv-grid, .founders-grid, .values-grid { grid-template-columns:1fr; }
+  .mvv-card.valores { grid-column:auto; }
+  .palette-grid { grid-template-columns:repeat(4,1fr); }
+  .color-desc-grid { grid-template-columns:1fr; }
+  .nav-right { display:none; }
+  .buy-glow-ring { width: min(260px, 75vw); height: min(260px, 75vw); }
+  .hero-logo-img { max-height: min(42vh, 320px); width: min(96vw, 620px); }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ SIDE MENU ════════════════ -->
+<div id="menu-overlay" onclick="closeMenu()"></div>
+
+<aside id="side-menu">
+  <div class="menu-header">
+    <div class="menu-logo">
+      <img src="Atakha.png" alt="Átakha" class="brand-img">
+    </div>
+    <button class="menu-close" onclick="closeMenu()">✕</button>
+  </div>
+
+  <nav class="menu-nav">
+    <div class="menu-section-label">Principal</div>
+    <button class="menu-item active" onclick="showPage('home'); closeMenu()" data-page="home">
+      <span class="menu-icon">⚔️</span> Inicio
+    </button>
+
+    <div class="menu-divider"></div>
+    <div class="menu-section-label">Páginas</div>
+
+    <button class="menu-item magenta" onclick="showPage('comprar'); closeMenu()" data-page="comprar">
+      <span class="menu-icon">🛒</span> Comprar Átakha
+    </button>
+
+    <button class="menu-item teal" onclick="showPage('nosotros'); closeMenu()" data-page="nosotros">
+      <span class="menu-icon">👥</span> Quiénes Somos
+    </button>
+
+    <div class="menu-divider"></div>
+    <div class="menu-section-label">Secciones</div>
+
+    <button class="menu-item" onclick="scrollToSection('problem'); closeMenu()">
+      <span class="menu-icon">❗</span> Problemática
+    </button>
+    <button class="menu-item" onclick="scrollToSection('mvv'); closeMenu()">
+      <span class="menu-icon">🎯</span> Misión y Visión
+    </button>
+    <button class="menu-item" onclick="scrollToSection('nombre'); closeMenu()">
+      <span class="menu-icon">✦</span> El Nombre
+    </button>
+    <button class="menu-item" onclick="scrollToSection('colores'); closeMenu()">
+      <span class="menu-icon">🎨</span> Identidad Visual
+    </button>
+  </nav>
+
+  <div class="menu-footer">© 2026 FAS · Fernando · Ana · Santiago</div>
+</aside>
+
+<!-- ════════════════ NAV ════════════════ -->
+<nav>
+  <div class="nav-left">
+    <button class="hamburger" onclick="toggleMenu()" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-logo" onclick="showPage('home')">
+      <img src="Atakha.png" alt="Átakha" class="brand-img">
+    </div>
+  </div>
+  <div id="breadcrumb" class="nav-breadcrumb">
+    FAS / <span id="breadcrumb-page">Inicio</span>
+  </div>
+  <div class="nav-right">
+    <button class="nav-btn buy" onclick="showPage('comprar')">🛒 Comprar</button>
+    <button class="nav-btn about" onclick="showPage('nosotros')">Nosotros</button>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════
+     PAGE: HOME
+════════════════════════════════════════ -->
+<div id="page-home" class="page active">
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <span class="hero-tag">▸ FAS presenta</span>
+      <img src="Atakha.png" alt="Átakha" class="brand-img hero-logo-img">
+      <p class="hero-sub">El videojuego de peleas que convierte el deporte en una experiencia brutal, adictiva y saludable. Muévete. Golpea. Gana.</p>
+      <button class="hero-cta" onclick="showPage('comprar')">⚡ Consíguelo Ahora</button>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- PROBLEMA -->
+  <section id="problem">
+    <div class="problem-inner">
+      <div class="problem-text reveal">
+        <p class="section-label">01 — Problemática</p>
+        <h2 class="section-title">El Deporte<br>No Divierte.</h2>
+        <p>Vivimos en una era donde las redes sociales han secuestrado la atención de millones de jóvenes. El deporte se percibe como tedioso, solitario y sin recompensa inmediata.</p>
+        <br>
+        <p>En <strong>FAS</strong> creemos que la solución no es eliminar la diversión, sino <em>redirigirla</em>. Si la actividad física se vive como un juego, el cuerpo y la mente ganan al mismo tiempo.</p>
+      </div>
+      <div class="stat-cards reveal">
+        <div class="stat-card"><div class="stat-num">67%</div><div class="stat-desc">de jóvenes prefiere pantallas al ejercicio físico</div></div>
+        <div class="stat-card"><div class="stat-num">3H</div><div class="stat-desc">promedio diario en redes sociales por adolescente</div></div>
+        <div class="stat-card"><div class="stat-num">+40%</div><div class="stat-desc">de abandono en gimnasios en los primeros 3 meses</div></div>
+        <div class="stat-card"><div class="stat-num">0</div><div class="stat-desc">videojuegos de pelea que exijan esfuerzo físico real</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- MVV -->
+  <section id="mvv">
+    <div class="mvv-inner">
+      <p class="section-label reveal">02 — ADN de Empresa</p>
+      <h2 class="section-title reveal">Misión, Visión<br>& Valores</h2>
+      <div class="mvv-grid">
+        <div class="mvv-card mision reveal">
+          <span class="mvv-icon">🎯</span>
+          <h3>¿Quiénes Somos?</h3>
+          <p class="mvv-quote">"Somos una empresa enfocada en el bienestar de la sociedad y queremos facilitarles el ejercicio dándole un enfoque lúdico al deporte."</p>
+          <p class="mvv-explain">Si nos divertimos haciendo una actividad tediosa, todo mejora y nos apetece más. La diversión es el motor del cambio de hábitos.</p>
+        </div>
+        <div class="mvv-card vision reveal">
+          <span class="mvv-icon">🚀</span>
+          <h3>¿Quiénes Queremos Ser?</h3>
+          <p class="mvv-quote">"Queremos ser motores de una sociedad sana y eficiente, pero sin perder el foco en la diversión y la salud mental."</p>
+          <p class="mvv-explain">Queremos ser promotores de alternativas que hagan que los jóvenes se entretengan siendo productivos y se desintoxiquen del scroll infinito.</p>
+        </div>
+        <div class="mvv-card valores reveal">
+          <span class="mvv-icon">⚡</span>
+          <h3>¿Qué Valores Nos Definen?</h3>
+          <p class="mvv-quote">"Somos personas distintas que mezclamos lo mejor y más característico de nosotros."</p>
+          <div class="valores-pills">
+            <span class="pill">Innovación</span>
+            <span class="pill">Entretenimiento</span>
+            <span class="pill">Creatividad</span>
+            <span class="pill">Sin Miedo al Cambio</span>
+            <span class="pill">Rebeldía</span>
+            <span class="pill">Disciplina</span>
+          </div>
+          <p class="mvv-explain">Innovar sin miedo, crear sin límites, rebelarse contra lo mediocre y mantener la disciplina para hacerlo realidad.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- NOMBRE -->
+  <section id="nombre">
+    <div class="nombre-inner">
+      <div class="nombre-text reveal">
+        <p class="section-label">03 — Identidad</p>
+        <h2 class="section-title">El Nombre<br>Lo Es Todo</h2>
+        <p><strong>FAS</strong> nace de los nombres de sus fundadores: Fernando, Ana y Santiago. Pero también suena como la onomatopeya de una bofetada seca, de un golpe limpio.</p>
+        <p>Nuestro producto se llama <strong>Átakha</strong>. Una pronunciación rápida, diferente y cautivadora. La ortografía alternativa no es un error, es un acto de rebeldía.</p>
+        <p>Átakha no es un juego. Es una filosofía de movimiento.</p>
+      </div>
+      <div class="logo-showcase reveal">
+        <img src="Atakha.png" alt="Átakha" class="brand-img">
+        <div class="logo-tagline">// Muévete · Golpea · Supérate //</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="sep"></div>
+
+  <!-- COLORES -->
+  <section id="colores">
+    <div class="colores-inner">
+      <p class="section-label reveal">04 — Paleta Cromática</p>
+      <h2 class="section-title reveal">Colores que<br>Hablan Solos</h2>
+      <div class="palette-grid">
+        <div class="swatch reveal"><div class="swatch-block" style="background:#ff9600"></div><div class="swatch-info"><span class="swatch-hex">#FF9600</span><div class="swatch-name">Naranja Energía</div></div></div>
+        <div class="swatch reveal"><div class="swatch-block" style="background:#7824c4"></div><div class="swatch-info"><span class="swatch-hex">#7824C4</span><div class="swatch-name">Morado Creativo</div></div></div>
+        <div class="swatch reveal"><div class="swatch-block" style="background:#299da7"></div><div class="swatch-info"><span class="swatch-hex">#299DA7</span><div class="swatch-name">Turquesa Tech</div></div></div>
+        <div class="swatch reveal"><div class="swatch-block" style="background:#115774"></div><div class="swatch-info"><span class="swatch-hex">#115774</span><div class="swatch-name">Azul Profundo</div></div></div>
+        <div class="swatch reveal"><div class="swatch-block" style="background:#d73704"></div><div class="swatch-info"><span class="swatch-hex">#D73704</span><div class="swatch-name">Rojo Llama</div></div></div>
+        <div class="swatch reveal"><div class="swatch-block" style="background:#f8353d"></div><div class="swatch-info"><span class="swatch-hex">#F8353D</span><div class="swatch-name">Carmesí Acción</div></div></div>
+        <div class="swatch reveal"><div class="swatch-block" style="background:#ca34d1"></div><div class="swatch-info"><span class="swatch-hex">#CA34D1</span><div class="swatch-name">Magenta Joven</div></div></div>
+      </div>
+      <div class="color-desc-grid reveal">
+        <div class="color-desc" style="background:rgba(255,150,0,.07);border:1px solid rgba(255,150,0,.18)">
+          <h4 style="color:var(--orange)">Naranja + Rojo</h4>
+          <p>Energía, entusiasmo, liderazgo. Dinamismo y acción en estado puro.</p>
+        </div>
+        <div class="color-desc" style="background:rgba(120,36,196,.07);border:1px solid rgba(120,36,196,.18)">
+          <h4 style="color:var(--purple)">Morado + Magenta</h4>
+          <p>Creatividad, innovación y originalidad. Modernidad y juventud sin complejos.</p>
+        </div>
+        <div class="color-desc" style="background:rgba(41,157,167,.07);border:1px solid rgba(41,157,167,.18)">
+          <h4 style="color:var(--teal)">Azul + Turquesa</h4>
+          <p>Confianza, tecnología y profesionalismo con elegancia y fuerza.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo"><img src="Atakha.png" alt="Átakha" class="brand-img"></div>
+    <p class="footer-text">© 2026 FAS · Fernando · Ana · Santiago · Todos los derechos reservados</p>
+    <p class="footer-text" style="margin-top:6px">Muévete · Golpea · Supérate</p>
+  </footer>
+
+</div><!-- /page-home -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: COMPRAR
+════════════════════════════════════════ -->
+<div id="page-comprar" class="page">
+
+  <div class="page-hero">
+    <div class="page-hero-bg"></div>
+    <div class="page-hero-grid"></div>
+    <div class="page-hero-content">
+      <p class="page-hero-eyebrow">▸ Disponible ahora</p>
+      <h1 class="page-hero-title">CONSIGUE<br>ÁTAKHA</h1>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="buy-section">
+    <div class="buy-grid">
+      <div class="buy-product-visual reveal">
+        <div class="buy-glow-ring"></div>
+        <img src="Atakha.png" alt="Átakha" class="brand-img">
+      </div>
+      <div class="buy-info reveal">
+        <div class="buy-tag">Lanzamiento 2025</div>
+        <div class="buy-product-name">ÁTAKHA</div>
+        <p class="buy-desc">El primer videojuego de peleas que requiere movimiento físico real. Combina la adrenalina del combate con un entrenamiento completo. Cada golpe lo das tú.</p>
+        <div class="buy-features">
+          <div class="buy-feature">Modo historia: 20+ horas de contenido</div>
+          <div class="buy-feature">Multijugador online hasta 4 jugadores</div>
+          <div class="buy-feature">Compatible con sensores de movimiento</div>
+          <div class="buy-feature">Más de 12 personajes jugables</div>
+          <div class="buy-feature">Seguimiento de calorías en tiempo real</div>
+          <div class="buy-feature">Actualizaciones gratuitas el primer año</div>
+        </div>
+        <div class="buy-price-box">
+          <div>
+            <div class="buy-price">19,99€ <span>/ copia</span></div>
+            <div style="font-size:.78rem;color:rgba(232,237,242,.35);margin-top:4px">IVA incluido · Descarga digital</div>
+          </div>
+          <button class="buy-btn">⚡ Comprar Ahora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="platforms-section">
+    <div class="platforms-inner">
+      <h2>Disponible en</h2>
+      <div class="platform-cards">
+        <div class="platform-card reveal">
+          <div class="platform-icon">🔴</div>
+          <div><div class="platform-name">Nintendo Switch 2</div><div class="platform-status">Disponible</div></div>
+        </div>
+        <div class="platform-card reveal">
+          <div class="platform-icon">💻</div>
+          <div><div class="platform-name">PC — Steam</div><div class="platform-status">Próximamente</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-logo"><img src="Atakha.png" alt="Átakha" class="brand-img"></div>
+    <p class="footer-text">© 2026 FAS · Fernando · Ana · Santiago</p>
+  </footer>
+
+</div><!-- /page-comprar -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: NOSOTROS
+════════════════════════════════════════ -->
+<div id="page-nosotros" class="page">
+
+  <div class="page-hero" style="background:linear-gradient(160deg,rgba(41,157,167,.08),rgba(120,36,196,.08))">
+    <div class="page-hero-bg" style="background:radial-gradient(ellipse 70% 80% at 30% 40%,rgba(41,157,167,.18) 0%,transparent 60%),radial-gradient(ellipse 50% 60% at 80% 70%,rgba(120,36,196,.15) 0%,transparent 60%)"></div>
+    <div class="page-hero-grid" style="background-image:linear-gradient(rgba(41,157,167,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(41,157,167,.05) 1px,transparent 1px);background-size:50px 50px"></div>
+    <div class="page-hero-content">
+      <p class="page-hero-eyebrow" style="color:var(--teal)">▸ Conoce al equipo</p>
+      <h1 class="page-hero-title">QUIÉNES<br>SOMOS</h1>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="about-section">
+    <div class="founders-intro">
+      <div class="founders-intro-text reveal">
+        <p class="section-label" style="color:var(--teal)">El equipo fundador</p>
+        <h2>Tres personas.<br>Una visión.</h2>
+        <p>FAS nació de la convicción de que el deporte y el entretenimiento no tienen por qué estar reñidos. Somos Fernando, Ana y Santiago: tres personas con perfiles distintos que comparten un mismo objetivo.</p>
+        <p>Cada uno aporta lo mejor de sí para construir Átakha, el producto que creemos puede cambiar la forma en que los jóvenes se relacionan con el ejercicio.</p>
+      </div>
+      <div class="about-logo reveal">
+        <img src="FAS.png" alt="Átakha" class="brand-img">
+      </div>
+    </div>
+
+    <div class="founders-grid">
+      <div class="founder-card reveal">
+        <div class="founder-avatar">
+          <span class="founder-initial">F</span>
+        </div>
+        <div class="founder-name">Fernando</div>
+        <div class="founder-role">Diseño & Dirección Creativa</div>
+        <p class="founder-bio">La visión artística detrás de Átakha. Fernando da forma a la identidad visual del proyecto: desde la estética de los personajes hasta la experiencia de usuario. Cree que el diseño es la primera batalla que hay que ganar.</p>
+      </div>
+      <div class="founder-card reveal">
+        <div class="founder-avatar">
+          <span class="founder-initial">A</span>
+        </div>
+        <div class="founder-name">Ana</div>
+        <div class="founder-role">Estrategia & Comunicación</div>
+        <p class="founder-bio">La mente estratégica del equipo. Ana conecta la misión de FAS con el mundo exterior: define el mensaje, construye la marca y se asegura de que Átakha llegue a quien lo necesita. Su lema: si no se ve, no existe.</p>
+      </div>
+      <div class="founder-card reveal">
+        <div class="founder-avatar">
+          <span class="founder-initial">S</span>
+        </div>
+        <div class="founder-name">Santiago</div>
+        <div class="founder-role">Tecnología & Desarrollo</div>
+        <p class="founder-bio">El arquitecto técnico de Átakha. Santiago transforma las ideas en código, los movimientos en mecánicas y los conceptos en experiencias jugables. Para él, el mejor golpe es el que el jugador no esperaba.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="about-values-section">
+    <div class="about-values-inner">
+      <h2 class="reveal">Lo que nos mueve</h2>
+      <div class="values-grid">
+        <div class="value-item reveal"><div class="value-icon">💡</div><div class="value-name" style="color:var(--orange)">Innovación</div><p class="value-text">Buscamos constantemente nuevas formas de hacer las cosas. Lo que existe ya no nos basta.</p></div>
+        <div class="value-item reveal"><div class="value-icon">🎮</div><div class="value-name" style="color:var(--purple)">Entretenimiento</div><p class="value-text">El juego es universal. Creemos que la diversión es una herramienta de cambio real.</p></div>
+        <div class="value-item reveal"><div class="value-icon">🎨</div><div class="value-name" style="color:var(--teal)">Creatividad</div><p class="value-text">Nunca seguimos el manual. Las mejores soluciones surgen cuando te atreves a salirte del guión.</p></div>
+        <div class="value-item reveal"><div class="value-icon">🔥</div><div class="value-name" style="color:var(--crimson)">Sin Miedo al Cambio</div><p class="value-text">El cambio no nos asusta: es nuestro territorio natural. Adaptarse es sobrevivir.</p></div>
+        <div class="value-item reveal"><div class="value-icon">⚡</div><div class="value-name" style="color:var(--magenta)">Rebeldía</div><p class="value-text">Nos rebelamos contra lo mediocre, lo predecible y lo que "siempre se ha hecho así".</p></div>
+        <div class="value-item reveal"><div class="value-icon">🏋️</div><div class="value-name" style="color:var(--navy)">Disciplina</div><p class="value-text">La rebeldía sin disciplina es ruido. Trabajamos duro cada día para que las ideas se hagan realidad.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-logo"><img src="Atakha.png" alt="Átakha" class="brand-img"></div>
+    <p class="footer-text">© 2026 FAS · Fernando · Ana · Santiago</p>
+  </footer>
+
+</div><!-- /page-nosotros -->
+
+
+<!-- ════════════════ SCRIPTS ════════════════ -->
+<script>
+// ── PAGE ROUTING ──
+const pages = {
+  home:     { el: 'page-home',     label: 'Inicio' },
+  comprar:  { el: 'page-comprar',  label: 'Comprar' },
+  nosotros: { el: 'page-nosotros', label: 'Nosotros' },
+};
+
+function showPage(id) {
+  Object.entries(pages).forEach(([key, p]) => {
+    document.getElementById(p.el).classList.toggle('active', key === id);
+  });
+  document.getElementById('breadcrumb-page').textContent = pages[id].label;
+
+  // update menu active state
+  document.querySelectorAll('.menu-item[data-page]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.page === id);
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  initReveal();
+}
+
+function scrollToSection(id) {
+  showPage('home');
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }, 100);
+}
+
+// ── MENU ──
+function openMenu() {
+  document.getElementById('side-menu').classList.add('open');
+  document.getElementById('menu-overlay').classList.add('open');
+  document.querySelector('.hamburger').classList.add('is-open');
+}
+function closeMenu() {
+  document.getElementById('side-menu').classList.remove('open');
+  document.getElementById('menu-overlay').classList.remove('open');
+  document.querySelector('.hamburger').classList.remove('is-open');
+}
+function toggleMenu() {
+  if (document.getElementById('side-menu').classList.contains('open')) closeMenu();
+  else openMenu();
+}
+
+// ── SCROLL REVEAL ──
+function initReveal() {
+  const items = document.querySelectorAll('.page.active .reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        e.target.style.transitionDelay = `${(i % 5) * 0.07}s`;
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  items.forEach(el => io.observe(el));
+}
+initReveal();
+
+// ── SPARK ON CLICK ──
+const sparkColors = ['#ff9600','#ca34d1','#f8353d','#299da7','#7824c4','#ffffff'];
+document.addEventListener('click', e => {
+  for (let i = 0; i < 7; i++) {
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.style.left = e.clientX + 'px';
+    s.style.top  = e.clientY + 'px';
+    s.style.background = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+    const angle = (Math.PI * 2 / 7) * i + Math.random() * .5;
+    const dist  = 28 + Math.random() * 38;
+    s.style.setProperty('--dx', Math.cos(angle)*dist + 'px');
+    s.style.setProperty('--dy', Math.sin(angle)*dist + 'px');
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 600);
+  }
+});
+</script>
+</body>
+</html>
